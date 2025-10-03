@@ -1,0 +1,282 @@
+# MDDG - Molecular Dynamics to Disconnectivity Graphs
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│    ███╗   ███╗██████╗ ██████╗  ██████╗                      │
+│    ████╗ ████║██╔══██╗██╔══██╗██╔════╝                      │
+│    ██╔████╔██║██║  ██║██║  ██║██║  ███╗                     │
+│    ██║╚██╔╝██║██║  ██║██║  ██║██║   ██║                     │
+│    ██║ ╚═╝ ██║██████╔╝██████╔╝╚██████╔╝                     │
+│    ╚═╝     ╚═╝╚═════╝ ╚═════╝  ╚═════╝                      │
+│                                                             │
+│   Molecular Dynamics to Disconnectivity Graphs              │
+│        Energy Landscape Analysis Tool                       │
+│                                                             │
+│  V. Neuman, P. A. Wesołowski, K. K. Bojarski,               │
+│  Diksha Dewan, M. Schäffler, P. Smardz, D. J. Wales         │
+│                                                             │
+│  "Smoothing Molecular Motion                                │
+│   into Energy Landscapes"  In preparation.                  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+Version 0.1.0 | GNU-3.0 License
+```
+## Citation
+
+If you use MDDG in your research, please cite:
+
+V. Neuman, P. A. Wesołowski,K. K. Bojarski, Diksha Dewan, M. Schäffler, P. Smardz, D. J. Wales. " Smoothing Molecular Motion into Energy Landscapes:Disconnectivity Graphs to Visualise Molecular Dynamics " In preperation.
+
+## Authors
+
+Original code: Vilmos Neuman, Patryk A. Wesołowski and David J. Wales
+With help from (in alphabetical order): Krzysztof K. Bojarski, Diksha Dewan, Moritz Schäffler and Pamela Smardz
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the LICENSE file for details.
+
+## Overview
+
+**MDDG** is a lightweight Python program that converts molecular dynamics (MD) trajectories into disconnectivity graphs by identifying energy minima and transition states from time series data. It processes energy trajectories to generate the PATHSAMPLE like input files (`min.data` and `ts.data`) required for the disconnectivity graph programme disconnectionDPS.
+
+## Features
+
+- **Flexible Input Format Support**
+  - Automatic detection of file formats (CSV, space/tab-delimited)
+  - Smart column detection for energy data
+  - Header recognition and parsing
+  - Support for 2-column (frame, energy) or multi-column formats
+
+- **Processing**
+  - Savitzky-Golay smoothing for noise reduction
+  - Configurable frame skipping for equilibration removal
+  - Adjustable sampling rates for large trajectories
+  - Polynomial extrapolation for endpoint analysis
+
+- **Analysis**
+  - Automatic minima identification
+  - Transition state detection between minima
+  - Energy landscape connectivity mapping
+  - Visual trajectory analysis with matplotlib
+
+## Installation
+
+### Requirements
+
+```bash
+python >= 3.6
+numpy
+scipy
+matplotlib
+```
+
+### Quick Install
+
+```bash
+# Clone the repository
+
+# Install dependencies
+pip install numpy scipy matplotlib
+```
+
+## Usage
+
+### Basic Usage
+
+```bash
+python MDDG.py --data trajectory.dat
+```
+
+### Command Line Options
+
+```
+Required:
+  --data FILENAME       Input data file containing energy trajectory
+
+Optional:
+  --column COL         Column to use for energy (default: auto-detect)
+                       Can be: column number (1,2,3...) or name
+  --skip SKIP          Skip first SKIP frames (default: 0)
+                       Useful for removing equilibration period
+  --step STEP          Sample every STEP frames (default: 1)
+  --window WINDOW      Smoothing window size (default: 5, 0=disabled)
+  --polyorder ORDER    Polynomial order for smoothing (default: 2)
+  --delimiter DELIM    Column delimiter (default: auto-detect)
+  --help               Show help message
+```
+
+### Examples
+
+#### 1. Process a simple trajectory file
+```bash
+python MDDG.py --data energy.dat
+```
+
+#### 2. Skip equilibration and sample every 10 frames
+```bash
+python MDDG.py --data trajectory.dat --skip 1000 --step 10
+```
+
+#### 3. Use specific column for energy
+```bash
+# By column number (1-indexed)
+python MDDG.py --data data.csv --column 3
+
+# By column name
+python MDDG.py --data data.csv --column "potential_energy"
+```
+
+#### 4. Adjust smoothing parameters
+```bash
+python MDDG.py --data trajectory.dat --window 15 --polyorder 3
+```
+
+#### 5. Process CSV file with custom delimiter
+```bash
+python MDDG.py --data data.csv --delimiter "," --step 5
+```
+
+## Input File Format
+
+MDDG automatically detects and handles various input formats:
+
+### Supported Formats
+
+1. **Two-column format** (frame, energy):
+```
+0    -125.432
+1    -125.398
+2    -125.412
+```
+
+2. **Multi-column with headers**:
+```
+Step PotEng KinEng TotEng
+0    -125.432  23.456  -101.976
+1    -125.398  23.512  -101.886
+```
+
+3. **CSV format**:
+```
+frame,potential_energy,kinetic_energy
+0,-125.432,23.456
+1,-125.398,23.512
+```
+
+## Output Files
+
+### 1. `min.data`
+Contains the energies of identified minima in a format compatible with disconnectivity graph tools:
+```
+  -125.4320000000   0.0   1   0.0   0.0   0.0
+  -124.8950000000   0.0   1   0.0   0.0   0.0
+```
+
+### 2. `ts.data`
+Contains transition state information with connectivity:
+```
+  -124.2340000000   0.0   1     1     2   0.0   0.0   0.0
+  -123.9870000000   0.0   1     2     3   0.0   0.0   0.0
+```
+Format: `energy  0.0  1  from_minimum  to_minimum  0.0  0.0  0.0`
+
+### 3. `minimum_frames.txt`
+Maps each minimum to its corresponding frame number in the trajectory:
+```
+# Mapping of minima to frame numbers for coordinate extraction
+# Data column: PotentialEnergy
+# Sampling: every 10 frames
+# Smoothing window: 5
+# Polynomial order: 2
+#----------------------------------------------------------------------
+
+Minimum    1 | Index      0 | Frame          0 | E =  -125.4320
+Minimum    2 | Index    450 | Frame       4500 | E =  -124.8950
+```
+
+### 4. Visualization Files
+- `energy_analysis.png` - High-quality raster plot
+- `energy_analysis.pdf` - Vector graphics plot
+
+## Algorithm Details
+
+### Minima Detection
+1. **Interior minima**: Points where E(i) < E(i-1) and E(i) < E(i+1)
+2. **Endpoint analysis**: Cubic polynomial extrapolation to check if endpoints are minima
+
+### Transition State Identification
+- For each pair of consecutive minima, the highest energy point between them is identified as the transition state
+- Creates connectivity information for the energy landscape
+
+### Smoothing
+- Uses Savitzky-Golay filter to reduce noise while preserving features
+- Automatically adjusts parameters to ensure mathematical validity
+- Can be disabled with `--window 0` for raw datail
+
+### Savitzky-Golay Filter Details
+
+The Savitzky-Golay filter is used for smoothing noisy trajectory data while preserving important features. The filter acts as a low-pass filter with characteristic residence times of interest (T_noise ≪ T_c ≪ T_basin).
+
+**Cut-off Frequency Estimation**
+
+Using a least-squares fit for SG filters, from the literature, the normalized -3 dB bandwidth is:
+
+b = f_c/f_s ≈ [(6.352(m+1/2))/(p+1.379) - (0.513+0.316p)/(m+1/2)]^(-1)
+
+Where:
+- m = (window_size - 1) / 2 (half-width of the window)
+- p = polynomial order
+- f_s = sampling frequency
+- f_c = cutoff frequency
+
+**Characteristic Timescales**
+
+- Effective cut-off: f_c ≈ f_-3dB = b·f_s
+- Characteristic timescale: T_c ≈ 1/f_c = Δt/b
+
+Where Δt is the time step between frames.
+
+**Parameter Effects**
+- Larger m (window size) → smaller b → stronger smoothing
+- Larger p (polynomial order) with fixed m → slightly larger b → more detail preserved, weaker stopband attenuation
+
+This allows users to tune the smoothing based on their trajectory's characteristic timescales.
+
+## Contributing
+
+Contributions are welcome! 
+
+## Troubleshooting
+
+### Common Issues
+
+**No minima found**
+- Try reducing the smoothing window size (`--window 3`)
+- Check if trajectory is monotonic
+- Reduce sampling step size (`--step 1`)
+
+**Memory issues with large files**
+- Increase sampling step (`--step 10` or higher)
+- Process trajectory in segments
+
+**Column detection fails**
+- Explicitly specify column with `--column`
+- Check file format and delimiters
+- Ensure file has consistent formatting
+
+## Support
+
+For issues, questions, or suggestions:
+- Open an issue on GitHub
+- Check existing documentation
+- Contact the corresponding authors at paw61@cam.ac.uk or dw34@cam.ac.uk
+
+## Acknowledgments
+
+This work was developed at the University of Cambridge, Department of Chemistry and has been supported by the travel grant of St Hilda's College Oxford and the scholarship of the Cambridge and Oxford Alumni Club of Hungary.
+
+---
+
+*MDDG - Transforming molecular dynamics into energy landscapes*
