@@ -44,13 +44,10 @@ If you use MDDG in your research, please cite:
 > *In preparation*
 
 ## Requirements
-
-bash
-python >= 3.6
-numpy
-scipy
-matplotlib
-
+- Python 
+- NumPy
+- SciPy
+- Matplotlib
 ## License
 
 GNU 3.0
