@@ -19,7 +19,3 @@ python MDDG.py -h
 
 ## Please read the full readme file
 
-
-                                                                  
-
-<img width="1500" height="1500" alt="clean_vibrant_surfaces (3)" src="https://github.com/user-attachments/assets/46b8e591-3e82-4ea9-8087-ca894564f1d9" />
