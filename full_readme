@@ -226,7 +226,7 @@ Using a least-squares fit for SG filters, from the literature, the normalized -3
 b = f_c/f_s ≈ [(6.352(m+1/2))/(p+1.379) - (0.513+0.316p)/(m+1/2)]^(-1)
 
 Where:
-- m = window size
+- m = half window length
 - p = polynomial order
 - f_s = sampling frequency
 - f_c = cutoff frequency
