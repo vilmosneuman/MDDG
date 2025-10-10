@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # License: GNU-3.0-or-later
 # Copyright (C) 2025
-# Vilmos Neuman, Patryk A. Wesołowski, Krzysztof K. Bojarski, Diksha Dewan
-# Moritz Schäffler, Pamela Smardz, and David J. Wales
+# Original code: Vilmos Neuman, Patryk A. Wesołowski and David J. Wales
+# With help from (in alphabetical order): Krzysztof K. Bojarski, Diksha Dewan, Moritz Schäffler and Pamela Smardz
 
 """
 MDDG — Molecular Dynamics to Disconnectivity Graphs
 =======================================================
 
-A lightweight Python program to convert molecular dynamics trajectories
-into disconnectivity graphs.
+A lightweight Python program to convert molecular dynamics trajectories into disconnectivity graphs.
 
 Authors
 -------
@@ -18,22 +17,16 @@ Moritz Schäffler, Pamela Smardz, and David J. Wales
 
 License
 -------
-This file is part of MDDG and is distributed under the terms of the
-GNU General Public License v3.0.
+This file is part of MDDG and is distributed under the terms of the GNU General Public License v3.0 or later.
 
 Citation
 --------
-Cite as: Yet to be published
+Cite as: V. Neuman, P. A. Wesołowski,K. K. Bojarski, Diksha Dewan, M. Schäffler, P. Smardz, D. J. Wales. " Smoothing Molecular Motion into Energy Landscapes:Disconnectivity Graphs to Visualise Molecular Dynamics " In preparation.
 
 Contributing
 ------------
-Contributions are welcome!
+Contributions are always welcome!
 
-__version__ = "0.1.0"       
-__license__ = "GNU-3.0"
-
-"""
-"""
 Usage:
     python MDDG.py --data FILENAME [options]
 
@@ -41,21 +34,21 @@ Required:
     --data FILENAME         Input data file
 
 Options:
-    --column COL            Which column to use for energy (default: auto-detect)
+    --column COL            Which column to use for energy (default: auto-detect (avoid if possible))
                             Can be: column number (1,2,3...) or name (energy, PotEng, etc.)
     --skip SKIP             Skip first SKIP frames (default: 0)
                             Useful for removing equilibration period
     --step STEP             Sample every STEP frames (default: 1)
     --window WINDOW         Smoothing window size (default: 5, use 0 for no smoothing)
     --polyorder ORDER       Polynomial order for Savitzky-Golay filter (default: 2)
-                            Must be less than window size. Higher = less smoothing
-    --delimiter DELIM       Column delimiter (default: auto-detect)
+                            Must be less than window size. Higher polyorder --> less smoothing
+    --delimiter DELIM       Column delimiter (default: auto-detect (avoid if possible))
     --help                  Show this help message
 
 The script automatically handles:
     - Files with or without headers
-    - 2-column format (frame, energy)
-    - 3-column format (frame, potential_energy, enthalpy)
+    - 2 column format (frame, energy)
+    - 3 column format (frame, potential_energy, enthalpy)
     - Various delimiters (spaces, tabs, commas)
     - Different column names
 
@@ -66,18 +59,19 @@ Examples:
     # Skip first 1000 frames (equilibration) and sample every 10 frames
     python MDDG.py --data trajectory.dat --skip 1000 --step 10
     
-    # Specify which column to use by number (1-indexed)
+    # Specify which column to use by number (1 indexed)
     python MDDG.py --data trajectory.dat --column 3
     
     # Specify column by name
     python MDDG.py --data trajectory.dat --column enthalpy
     
-    # CSV file with custom sampling
-    python MDDG.py --data data.csv --step 10 --window 15
-    
     # Custom polynomial order for smoothing
     python MDDG.py --data trajectory.dat --window 9 --polyorder 3
 """
+
+__version__ = "0.1.1"       
+__license__ = "GNU-3.0"
+
 
 from pathlib import Path
 import sys
@@ -369,7 +363,7 @@ def check_endpoint_via_extrapolation(energies, position='first'):
         x = np.arange(n_fit)
         y = energies[:n_fit]
 
-        # Extrapolate 5 points backwards and check
+        # Extrapolate 3 points backwards and check
         x_test = np.array([-3, -2, -1, 0, 1])  # Include frame 0 and 1 for comparison
 
     else:  # 'last'
@@ -377,7 +371,7 @@ def check_endpoint_via_extrapolation(energies, position='first'):
         x = np.arange(n_fit)
         y = energies[-n_fit:]
 
-        # Extrapolate 5 points forward and check
+        # Extrapolate 3 points forward and check
         x_test = np.array([n_fit-2, n_fit-1, n_fit, n_fit+1, n_fit+2])
 
     try:
@@ -392,13 +386,13 @@ def check_endpoint_via_extrapolation(energies, position='first'):
             # Is last frame (index 1 in x_test) a local min?
             return y_test[1] < y_test[0] and y_test[1] < y_test[2]
     except (np.linalg.LinAlgError, ValueError) as e:
-        # Polynomial fitting can fail for degenerate cases
+        # Polynomial fitting can fail
         print(f"    Warning: Polynomial fitting failed for {position} endpoint: {e}")
         return False
 
 # -------------------------------------------------------------------- PARSE ARGS
 parser = argparse.ArgumentParser(
-    description='Generate min.data and ts.data from energy data (flexible format)',
+    description='Generate min.data and ts.data from energy data',
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog=__doc__
 )
@@ -473,27 +467,26 @@ except Exception as e:
 total_frames = len(all_energies)
 
 if total_frames == 0:
-    sys.exit(f"No energy data found in the file after skipping!")
+    sys.exit(f"No energy data found in the file")
 
 # Quick statistics
 print(f"\nData statistics (after skipping):")
 print(f"  - Energy range: [{all_energies.min():.4f}, {all_energies.max():.4f}]")
 print(f"  - Mean energy: {all_energies.mean():.4f}")
-print(f"  - Std deviation: {all_energies.std():.4f}")
-
 # ----------------------------------------------------------------- SMOOTHING
 # FIX: Use consistent variable for polyorder throughout
-actual_polyorder = POLYORDER  # Initialize with the original value
+actual_polyorder = POLYORDER  # Initialise with the original value
 
 if WINDOW_SIZE > 0:
     print(f"\nSmoothing trajectory ({total_frames} frames) with window size {WINDOW_SIZE}...")
     
-    if total_frames > WINDOW_SIZE:
-        # Ensure window size is odd for Savitzky-Golay
-        window = WINDOW_SIZE if WINDOW_SIZE % 2 == 1 else WINDOW_SIZE + 1
-        if window != WINDOW_SIZE:
-            print(f"  Note: Adjusted window size to {window} (must be odd for Savitzky-Golay filter)")
-        
+    # Ensure window size is odd for Savitzky-Golay FIRST
+    window = WINDOW_SIZE if WINDOW_SIZE % 2 == 1 else WINDOW_SIZE + 1
+    if window != WINDOW_SIZE:
+        print(f"  Note: Adjusted window size to {window} (must be odd for SG filter)")
+    
+    # Now check if we have enough frames for the ADJUSTED window
+    if total_frames > window:  # Check against adjusted window
         # Validate and adjust polynomial order if necessary
         if window <= POLYORDER:
             actual_polyorder = window - 1
@@ -511,12 +504,9 @@ if WINDOW_SIZE > 0:
             print("  Using original data without smoothing")
             all_smoothed_energies = all_energies
     else:
-        print(f"  Warning: Trajectory ({total_frames} frames) shorter than window size ({WINDOW_SIZE})")
+        print(f"  Warning: Trajectory ({total_frames} frames) not long enough for window size ({window})")
         print("  Using original data without smoothing")
         all_smoothed_energies = all_energies
-else:
-    print("\nSmoothing disabled, using original data")
-    all_smoothed_energies = all_energies
 
 # ----------------------------------------------------------------- SAMPLING
 print(f"\nSampling every {STEP_SIZE} frame(s)...")
@@ -696,54 +686,4 @@ plt.savefig('energy_analysis.pdf', bbox_inches='tight')
 plt.close()
 
 print("  Created energy_analysis.png and energy_analysis.pdf")
-#!/usr/bin/env python3
-"""
-extract_minima_frames.py - Extract specific PDB frames corresponding to selected minima
 
-Usage:
-    python extract_minima_frames.py --minima 1 5 10 15 --pdb trajectory.pdb --output extracted_frames.pdb
-    python extract_minima_frames.py --minima-file minima_list.txt --pdb trajectory.pdb
-"""
-
-import argparse
-import re
-import sys
-from pathlib import Path
-
-def parse_minimum_frames(filename='minimum_frames.txt'):
-    """Parse minimum_frames.txt to get mapping of minimum ID to PDB frame."""
-    mapping = {}
-    with open(filename, 'r') as f:
-        for line in f:
-            if line.startswith('Minimum'):
-                parts = line.split('|')
-                min_id = int(parts[0].split()[1])
-                pdb_frame = int(parts[2].split()[2])
-                # Convert to REMARK Structure number (1-indexed)
-                remark_structure = pdb_frame + 1
-                mapping[min_id] = remark_structure
-    return mapping
-
-def extract_frames_from_pdb(pdb_file, target_structures, output_file):
-    """Extract specific frames from PDB trajectory."""
-    
-    print(f"Reading PDB file: {pdb_file}")
-    print(f"Looking for REMARK Structure numbers: {sorted(target_structures)}")
-    
-    with open(pdb_file, 'r') as f:
-        all_lines = f.readlines()
-    
-    # Find all frame boundaries
-    frame_starts = []
-    for i, line in enumerate(all_lines):
-        if line.startswith('REMARK Structure'):
-            match = re.search(r'REMARK Structure\s+(\d+)', line)
-            if match:
-                struct_num = int(match.group(1))
-                frame_starts.append((i, struct_num))
-    
-    # Add end of file
-    frame_starts.append((len(all_lines), -1))
-    
-    print(f"Found {len(frame_starts)-1} total frames in trajectory")
-print("\nDone")
