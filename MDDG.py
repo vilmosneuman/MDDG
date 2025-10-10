@@ -507,7 +507,10 @@ if WINDOW_SIZE > 0:
         print(f"  Warning: Trajectory ({total_frames} frames) not long enough for window size ({window})")
         print("  Using original data without smoothing")
         all_smoothed_energies = all_energies
-
+else:
+    # No smoothing requested - use original data
+    print("  No smoothing applied (window size = 0)")
+    all_smoothed_energies = all_energies
 # ----------------------------------------------------------------- SAMPLING
 print(f"\nSampling every {STEP_SIZE} frame(s)...")
 
