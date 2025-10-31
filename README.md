@@ -39,9 +39,7 @@ Example MD time series data used in our publication is available in the `DATA` b
 
 If you use MDDG in your research, please cite:
 
-> V. Neuman, P. A. Wesołowski, K. K. Bojarski, D. Dewan, M. Schäffler, P. Smardz, D. J. Wales.  
-> "Smoothing Molecular Motion into Energy Landscapes: Disconnectivity Graphs to Visualise Molecular Dynamics"  
-> *In preparation*
+Neuman V, Wesołowski P, Bojarski K, Dewan D, Schäffler M, Smardz P, et al. Visualising the Energy Landscape for a Molecular Dynamics Trajectory. ChemRxiv. 2025; doi:10.26434/chemrxiv-2025-6f4zq This content is a preprint and has not been peer-reviewed.
 
 ## Requirements
 - Python 
