@@ -39,7 +39,7 @@ Example MD time series data used in our publication is available in the `DATA` b
 
 If you use MDDG in your research, please cite:
 
-Neuman V, Wesołowski P, Bojarski K, Dewan D, Schäffler M, Smardz P, et al. Visualising the Energy Landscape for a Molecular Dynamics Trajectory. ChemRxiv. 2025; doi:10.26434/chemrxiv-2025-6f4zq This content is a preprint and has not been peer-reviewed.
+Neuman V, Wesołowski P, Bojarski K, Dewan D, Schäffler M, Smardz P, and Wales D Visualising the Energy Landscape for a Molecular Dynamics Trajectory. ChemRxiv. 2025; doi:10.26434/chemrxiv-2025-6f4zq This content is a preprint and has not been peer-reviewed.
 
 ## Requirements
 - Python 
